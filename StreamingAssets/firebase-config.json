@@ -1,9 +1,0 @@
-{
-  "apiKey": "AIzaSyDxxxxxxxxxxxxxxxxxx",
-  "authDomain": "auth-3913d.firebaseapp.com",
-  "databaseURL": "https://auth-3913d-default-rtdb.firebaseio.com",
-  "projectId": "auth-3913d",
-  "storageBucket": "auth-3913d.appspot.com",
-  "messagingSenderId": "123456789012",
-  "appId": "1:123456789012:web:abcdef123456"
-}
