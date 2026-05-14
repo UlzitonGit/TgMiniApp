@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Unity WebGL with Firebase</title>
+    
+    <!-- Подключаем Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        }
+        
+        #unity-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: #1a1a2e;
+        }
+        
+        #unity-canvas {
+            width: 100%;
+            height: 100%;
+            background: #1a1a2e;
+        }
+        
+        #loading-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: white;
+            z-index: 100;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 4px solid #ffffff;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        #error-message {
+            display: none;
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(255,68,68,0.95);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 14px;
+            z-index: 200;
+        }
+        
+        .close-error {
+            float: right;
+            cursor: pointer;
+            margin-left: 12px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="unity-container">
+        <canvas id="unity-canvas" width=800 height=600 tabindex=-1></canvas>
+        <div id="loading-overlay">
+            <div class="spinner"></div>
+            <div>Loading Game...</div>
+        </div>
+        <div id="error-message">
+            <span class="close-error" onclick="document.getElementById('error-message').style.display='none'">✕</span>
+            <span id="error-text"></span>
+        </div>
+    </div>
+
+    <script>
+        // Конфигурация сборки Unity
+        var buildUrl = "Build";
+        var loaderUrl = buildUrl + "/{{ LOADER_FILENAME }}";
+        var config = {
+            dataUrl: buildUrl + "/{{ DATA_FILENAME }}",
+            frameworkUrl: buildUrl + "/{{ FRAMEWORK_FILENAME }}",
+            codeUrl: buildUrl + "/{{ CODE_FILENAME }}",
+            streamingAssetsUrl: "StreamingAssets",
+            companyName: "{{ COMPANY_NAME }}",
+            productName: "{{ PRODUCT_NAME }}",
+            productVersion: "{{ PRODUCT_VERSION }}"
+        };
+
+        var container = document.querySelector("#unity-container");
+        var canvas = document.querySelector("#unity-canvas");
+        var loadingOverlay = document.querySelector("#loading-overlay");
+        var errorMessageDiv = document.getElementById("error-message");
+        var errorText = document.getElementById("error-text");
+
+        function showError(message) {
+            errorText.innerText = message;
+            errorMessageDiv.style.display = "block";
+            loadingOverlay.style.display = "none";
+        }
+
+        // Проверка загрузки Firebase
+        if (typeof firebase === 'undefined') {
+            showError("Firebase SDK failed to load. Please check your internet connection.");
+        } else {
+            console.log("Firebase SDK loaded successfully");
+        }
+
+        // Создание экземпляра Unity
+        var script = document.createElement("script");
+        script.src = loaderUrl;
+        script.onload = () => {
+            createUnityInstance(canvas, config, (progress) => {
+                var percent = Math.round(progress * 100);
+                // Можно обновлять прогресс загрузки
+            }).then((unityInstance) => {
+                // Сохраняем экземпляр Unity в глобальную переменную
+                window.unityInstance = unityInstance;
+                loadingOverlay.style.display = "none";
+                console.log("Unity instance created successfully");
+                
+                // Отправляем уведомление в Unity о готовности
+                unityInstance.SendMessage("FirebaseManager", "OnWebGLReady");
+            }).catch((message) => {
+                showError("Failed to load Unity game: " + message);
+            });
+        };
+        script.onerror = () => {
+            showError("Failed to load Unity loader script. Check build files.");
+        };
+        document.body.appendChild(script);
+    </script>
+</body>
+</html>
